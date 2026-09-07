@@ -1,0 +1,1313 @@
+sentence-transformers==3.0.1
+faiss-cpu==1.8.0
+transformers==4.44.2
+torch==2.4.0
+ollama==0.3.3
+streamlit==1.38.0
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.1
+tqdm==4.66.5
+
+
+
+# RAGBench — RAG Evaluation & Optimization Framework
+
+## Complete Project Context / Handoff for New Chat
+
+I am building an AI/ML portfolio project called **RAGBench — RAG Evaluation & Optimization Framework**.
+
+The goal is to build a Retrieval-Augmented Generation (RAG) system and, more importantly, evaluate how accurately, reliably, and efficiently the RAG system works.
+
+I want this to become a strong **AI/ML Engineer / Data Scientist portfolio project** that demonstrates understanding of:
+
+* RAG
+* Transformers
+* Sentence Transformers
+* Embeddings
+* Vector databases / vector search
+* FAISS
+* Information Retrieval
+* Cosine similarity
+* LLMs
+* Hallucination detection
+* NLI
+* Evaluation metrics
+* Experimentation
+* System optimization
+* Latency measurement
+* Failure analysis
+
+I do NOT have a GPU or significant local computational resources, so the project should remain **CPU-friendly and local-first** wherever possible. Free Google Colab can be used for heavier experiments if necessary.
+
+---
+
+# 1. Core Project Idea
+
+A traditional RAG project asks:
+
+> "Can I build a chatbot that answers questions from documents?"
+
+RAGBench asks:
+
+> "How accurate, reliable, and effective is my RAG system?"
+
+The project should therefore measure both:
+
+### Retrieval quality
+
+* Recall@K
+* Precision@K
+* MRR / Mean Reciprocal Rank
+* Hit Rate
+
+### Generation quality
+
+* Faithfulness
+* Answer Relevancy
+* Eventually answer correctness
+* Potentially context relevance / groundedness
+
+### System performance
+
+* Retrieval latency
+* Generation latency
+* Total latency
+* Experiment comparison
+
+The major portfolio value is that the project does not merely call an LLM API. It measures and analyzes the behavior of the RAG pipeline.
+
+---
+
+# 2. V1 Project
+
+I already have a V1 prototype in a ZIP file called:
+
+`rag-eval-system.zip`
+
+The extracted project is:
+
+```text
+rag-eval-system/
+├── data/
+│   ├── corpus/
+│   │   └── sample_doc.md
+│   └── eval_set/
+│       └── eval_set.json
+├── src/
+│   ├── rag/
+│   │   ├── __init__.py
+│   │   ├── index.py
+│   │   ├── retrieve.py
+│   │   └── generate.py
+│   └── eval/
+│       ├── __init__.py
+│       ├── retrieval_metrics.py
+│       ├── faithfulness.py
+│       ├── answer_relevancy.py
+│       ├── run_eval.py
+│       └── dashboard.py
+├── notebooks/
+├── tests/
+│   └── test_retrieval_metrics.py
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
+
+The `notebooks/` folder is currently EMPTY.
+
+That is intentional/not a problem for V1. V1 is implemented through Python modules under `src/`.
+
+We decided NOT to add notebooks yet. They can be added in V2 for experiments.
+
+---
+
+# 3. V1 Technology Stack
+
+Current V1 uses:
+
+```text
+Python 3.10
+Sentence Transformers
+all-MiniLM-L6-v2
+FAISS CPU
+Ollama
+Qwen 2.5 1.5B
+Transformers
+NLI-DeBERTa-v3-small
+Streamlit
+NumPy
+Pandas
+Scikit-learn
+TQDM
+```
+
+Current requirements.txt:
+
+```text
+sentence-transformers==3.0.1
+faiss-cpu==1.8.0
+transformers==4.44.2
+torch==2.4.0
+ollama==0.3.3
+streamlit==1.38.0
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.1
+tqdm==4.66.5
+```
+
+---
+
+# 4. V1 Architecture
+
+The V1 pipeline is:
+
+```text
+                 RAGBench V1
+
+             Documents
+                 ↓
+              Chunking
+                 ↓
+          Sentence Transformer
+                 ↓
+             Embeddings
+                 ↓
+              FAISS
+                 ↓
+             Retrieval
+                 ↓
+          Retrieved Context
+                 ↓
+          Ollama / Qwen 1.5B
+                 ↓
+          Generated Answer
+                 ↓
+              Evaluation
+          ↙       ↓       ↘
+     Retrieval  Faithfulness  Relevancy
+       Metrics      NLI       Embedding
+                 ↓
+          Evaluation Results
+                 ↓
+          Streamlit Dashboard
+```
+
+---
+
+# 5. V1 Indexing
+
+File:
+
+```text
+src/rag/index.py
+```
+
+The current implementation:
+
+1. Reads `.md` and `.txt` files.
+2. Splits text into fixed-size character chunks.
+3. Uses:
+
+```text
+chunk_size = 400
+overlap = 50
+```
+
+4. Creates records containing:
+
+```text
+chunk_id
+doc_id
+text
+```
+
+5. Generates embeddings using:
+
+```text
+all-MiniLM-L6-v2
+```
+
+6. Converts embeddings to float32.
+7. Normalizes them with:
+
+```python
+faiss.normalize_L2(embeddings)
+```
+
+8. Uses:
+
+```python
+faiss.IndexFlatIP(dim)
+```
+
+Because embeddings are normalized, inner product approximates cosine similarity.
+
+9. Saves:
+
+```text
+data/index/index.faiss
+data/index/records.pkl
+```
+
+Important V1 limitation:
+
+The chunking is based on **characters**, not tokens or semantic/sentence boundaries.
+
+This is something to improve in V2.
+
+---
+
+# 6. V1 Retrieval
+
+File:
+
+```text
+src/rag/retrieve.py
+```
+
+The retriever:
+
+1. Loads the FAISS index.
+2. Loads the chunk records.
+3. Loads the same MiniLM embedding model.
+4. Embeds the user's question.
+5. Normalizes the query embedding.
+6. Searches FAISS.
+7. Returns top-K chunks.
+
+Default top-K:
+
+```text
+k = 3
+```
+
+Each retrieved result contains approximately:
+
+```text
+chunk_id
+doc_id
+text
+similarity score
+```
+
+---
+
+# 7. V1 Generation
+
+File:
+
+```text
+src/rag/generate.py
+```
+
+V1 uses Ollama locally.
+
+Default model:
+
+```text
+qwen2.5:1.5b
+```
+
+The `1.5b` means approximately 1.5 billion parameters.
+
+We chose this because I do not have a GPU and need a lightweight local model.
+
+The generation prompt tells the model to answer only using the retrieved context and say:
+
+```text
+I don't know based on the given context.
+```
+
+if the information is unavailable.
+
+The important point is that Qwen 1.5B is just the V1 baseline. Later V2 can compare different models.
+
+Potential future comparison:
+
+```text
+Qwen 1.5B
+Qwen 3B
+Qwen 7B
+```
+
+and compare:
+
+* accuracy
+* faithfulness
+* relevancy
+* latency
+* resource usage
+
+---
+
+# 8. V1 Retrieval Metrics
+
+File:
+
+```text
+src/eval/retrieval_metrics.py
+```
+
+Current V1 metrics:
+
+### Recall@K
+
+Checks whether the expected ground-truth chunk appears in the top K retrieved chunks.
+
+### Precision@K
+
+Current implementation assumes only ONE ground-truth chunk per question.
+
+Therefore, if one correct chunk is found in top 3:
+
+```text
+Precision@3 = 1/3
+```
+
+If none is found:
+
+```text
+Precision@3 = 0
+```
+
+### Reciprocal Rank
+
+If the correct chunk is ranked:
+
+```text
+1 → reciprocal rank = 1
+2 → reciprocal rank = 0.5
+3 → reciprocal rank = 0.333
+```
+
+If not found:
+
+```text
+0
+```
+
+### MRR
+
+Mean Reciprocal Rank across evaluation questions.
+
+Important V2 improvement:
+
+The metric system should eventually support **multiple relevant chunks per question**, because real RAG questions can be answered using several chunks.
+
+---
+
+# 9. V1 Faithfulness
+
+File:
+
+```text
+src/eval/faithfulness.py
+```
+
+Faithfulness is evaluated using an NLI model:
+
+```text
+cross-encoder/nli-deberta-v3-small
+```
+
+The system:
+
+1. Splits the generated answer into claims/sentences.
+2. Treats retrieved context as the premise.
+3. Treats each generated claim as the hypothesis.
+4. Uses NLI to determine whether the context entails the claim.
+5. Uses an entailment threshold.
+
+Default threshold:
+
+```text
+0.5
+```
+
+Faithfulness is calculated as the fraction of claims judged entailed.
+
+Important V1 limitations:
+
+* Naive sentence/claim splitting.
+* NLI is being used as a heuristic.
+* Context aggregation can affect NLI.
+* It is not a complete factual correctness evaluator.
+
+These can be improved later.
+
+---
+
+# 10. V1 Answer Relevancy
+
+File:
+
+```text
+src/eval/answer_relevancy.py
+```
+
+The system embeds:
+
+```text
+question
+answer
+```
+
+using MiniLM and calculates cosine similarity.
+
+Higher similarity means the answer is more semantically related to the question.
+
+Important limitation:
+
+Semantic similarity does NOT necessarily mean the answer is factually correct.
+
+Example:
+
+An answer can be highly similar to a question but still contain incorrect information.
+
+This is another V2 improvement area.
+
+---
+
+# 11. V1 Evaluation Runner
+
+File:
+
+```text
+src/eval/run_eval.py
+```
+
+The evaluation flow is:
+
+```text
+Load evaluation set
+        ↓
+For each question
+        ↓
+Retrieve top-K chunks
+        ↓
+Create context
+        ↓
+Generate answer with Ollama
+        ↓
+Calculate Recall
+        ↓
+Calculate Precision
+        ↓
+Calculate Reciprocal Rank
+        ↓
+Calculate Faithfulness
+        ↓
+Calculate Answer Relevancy
+        ↓
+Save results
+```
+
+Results are saved to:
+
+```text
+data/eval_set/results.json
+```
+
+---
+
+# 12. V1 Dashboard
+
+File:
+
+```text
+src/eval/dashboard.py
+```
+
+It is intended to display evaluation results through Streamlit.
+
+Run with:
+
+```powershell
+streamlit run src/eval/dashboard.py
+```
+
+---
+
+# 13. V1 Tests
+
+The project contains:
+
+```text
+tests/test_retrieval_metrics.py
+```
+
+Run:
+
+```powershell
+pytest
+```
+
+This tests the retrieval metric functions.
+
+---
+
+# 14. Ollama Setup
+
+Ollama was installed on the C: drive.
+
+The RAGBench project is on the D: drive:
+
+```text
+C:\
+└── Ollama
+
+D:\
+└── Installation
+    └── RAG
+        └── rag-eval-system
+```
+
+This is NOT a problem.
+
+Applications installed on C: can be used by projects stored on D:.
+
+The Ollama model used for V1 is:
+
+```text
+qwen2.5:1.5b
+```
+
+To download:
+
+```powershell
+ollama pull qwen2.5:1.5b
+```
+
+To test:
+
+```powershell
+ollama run qwen2.5:1.5b
+```
+
+Then type:
+
+```text
+What is machine learning?
+```
+
+The `>>>` prompt is where the question should be entered.
+
+Exit using:
+
+```text
+/bye
+```
+
+---
+
+# 15. Previous PyTorch Problem
+
+Initially, running:
+
+```powershell
+python -m src.rag.index --corpus data/corpus
+```
+
+produced:
+
+```text
+OSError: [WinError 126]
+The specified module could not be found.
+
+Error loading:
+...\venv\lib\site-packages\torch\lib\fbgemm.dll
+```
+
+This was a PyTorch/Windows DLL loading issue.
+
+The environment was:
+
+```text
+Python 3.10.0
+64-bit
+PyTorch 2.4.0+cpu
+```
+
+We checked:
+
+```powershell
+python -m pip show torch
+```
+
+and confirmed:
+
+```text
+Name: torch
+Version: 2.4.0+cpu
+Location:
+D:\Installation\RAG\rag-eval-system\rag-eval-system\venv\lib\site-packages
+```
+
+The Microsoft Visual C++ Redistributable x64 was installed.
+
+However, later the evaluation command successfully ran, so PyTorch is now loading correctly.
+
+Therefore the PyTorch issue is currently considered resolved.
+
+---
+
+# 16. V1 Successfully Ran
+
+The following command successfully executed:
+
+```powershell
+python -m src.eval.run_eval --eval-set data/eval_set/eval_set.json
+```
+
+Output:
+
+```text
+[q003] recall@3=0.0 faithfulness=0.0 answer_relevancy=0.838
+
+--- Summary ---
+Recall@3:      0.000
+MRR:           0.000
+Faithfulness:  0.000
+Answer Relevancy: 0.838
+
+Full results written to data/eval_set/results.json
+```
+
+There were some FutureWarning messages from Transformers/PyTorch.
+
+These were NOT fatal errors.
+
+The evaluation completed successfully and wrote:
+
+```text
+data/eval_set/results.json
+```
+
+---
+
+# 17. Current Evaluation Dataset
+
+Current evaluation question:
+
+```json
+[
+  {
+    "id": "q003",
+    "question": "What sensors are commonly used in ADAS (Advanced Driver Assistance Systems) to detect nearby objects?",
+    "ground_truth_answer": "ADAS systems commonly use a combination of radar, LiDAR, ultrasonic sensors, and cameras to detect and track nearby objects such as vehicles, pedestrians, and obstacles.",
+    "ground_truth_chunk_id": "automobile_doc_chunk_0"
+  }
+]
+```
+
+The evaluation result was:
+
+```json
+[
+  {
+    "id": "q003",
+    "question": "What sensors are commonly used in ADAS (Advanced Driver Assistance Systems) to detect nearby objects?",
+    "generated_answer": "Radar sensors, LiDAR, ultrasonic sensors, and cameras are commonly used in ADAS to detect nearby objects.",
+    "retrieved_chunk_ids": [
+      "sample_doc_chunk_3",
+      "sample_doc_chunk_4",
+      "sample_doc_chunk_2"
+    ],
+    "ground_truth_chunk_id": "automobile_doc_chunk_0",
+    "recall_at_k": 0.0,
+    "precision_at_k": 0.0,
+    "reciprocal_rank": 0.0,
+    "faithfulness": {
+      "score": 0.0,
+      "claims": [
+        {
+          "claim": "Radar sensors, LiDAR, ultrasonic sensors, and cameras are commonly used in ADAS to detect nearby objects.",
+          "entailed": false,
+          "entailment_score": 0.003
+        }
+      ]
+    },
+    "answer_relevancy": 0.838
+  }
+]
+```
+
+---
+
+# 18. Current Interpretation of the Evaluation
+
+The generated answer is essentially identical to the ground-truth answer:
+
+```text
+Radar
+LiDAR
+Ultrasonic sensors
+Cameras
+```
+
+But the retrieved chunks were:
+
+```text
+sample_doc_chunk_3
+sample_doc_chunk_4
+sample_doc_chunk_2
+```
+
+while the expected chunk was:
+
+```text
+automobile_doc_chunk_0
+```
+
+Therefore:
+
+```text
+Recall@3 = 0
+MRR = 0
+Precision@3 = 0
+```
+
+These metrics are behaving according to the current implementation because the expected chunk was not retrieved.
+
+The generated answer has:
+
+```text
+Answer Relevancy = 0.838
+```
+
+This means the answer is semantically related to the question.
+
+However:
+
+```text
+Faithfulness = 0
+NLI entailment score = 0.003
+```
+
+This likely means the retrieved context did not contain enough information to support the generated answer.
+
+This creates an important RAG failure case:
+
+```text
+Question
+   ↓
+Poor retrieval
+   ↓
+Wrong/irrelevant context
+   ↓
+LLM still generates a correct-looking answer
+   ↓
+Faithfulness detects that context does not support it
+```
+
+This is actually useful for demonstrating why RAG evaluation is necessary.
+
+---
+
+# 19. Current Issue to Investigate
+
+We need to inspect the contents of:
+
+```text
+data/corpus/
+```
+
+There appears to be a mismatch between:
+
+```text
+ground_truth_chunk_id:
+automobile_doc_chunk_0
+```
+
+and retrieved chunks:
+
+```text
+sample_doc_chunk_3
+sample_doc_chunk_4
+sample_doc_chunk_2
+```
+
+Possible cause:
+
+There may be multiple documents in the corpus, such as:
+
+```text
+sample_doc.md
+automobile_doc.md
+```
+
+OR the `automobile_doc` may have been added after the FAISS index was created.
+
+If the document was added after indexing, rebuild the index:
+
+```powershell
+python -m src.rag.index --corpus data/corpus
+```
+
+Then rerun:
+
+```powershell
+python -m src.eval.run_eval --eval-set data/eval_set/eval_set.json
+```
+
+Do NOT immediately modify metric code.
+
+First verify:
+
+```text
+Corpus
+ ↓
+Index
+ ↓
+Retrieved chunks
+ ↓
+Ground truth
+```
+
+---
+
+# 20. Important V1 Limitations
+
+V1 is intentionally a baseline/prototype.
+
+Current limitations:
+
+### Dataset
+
+Only a very small evaluation dataset.
+
+Need eventually:
+
+```text
+100–300+ questions
+```
+
+with carefully curated ground-truth answers/chunks.
+
+### Retrieval ground truth
+
+Currently assumes:
+
+```text
+one question → one ground-truth chunk
+```
+
+Real-world RAG can have:
+
+```text
+one question → multiple relevant chunks
+```
+
+### Chunking
+
+Current:
+
+```text
+fixed character chunks
+```
+
+Need better:
+
+```text
+sentence/paragraph/token-aware chunking
+```
+
+### Retrieval
+
+Current:
+
+```text
+FAISS top-k
+```
+
+Need potentially:
+
+```text
+FAISS top-20
+      ↓
+Reranker
+      ↓
+Top-5
+```
+
+### Answer relevancy
+
+Currently uses embedding similarity.
+
+This is useful but incomplete.
+
+### Faithfulness
+
+Current NLI approach is a heuristic and should be improved.
+
+### Experimentation
+
+V1 doesn't yet have a robust experiment runner.
+
+---
+
+# 21. V2 Vision
+
+V2 should evolve V1 into a much stronger AI/ML engineering project.
+
+Planned V2 improvements:
+
+## 1. Larger evaluation dataset
+
+Target:
+
+```text
+100–300+ questions
+```
+
+Potential categories:
+
+* factual questions
+* multi-hop questions
+* ambiguous questions
+* unanswerable questions
+* questions requiring multiple chunks
+* difficult retrieval questions
+
+---
+
+## 2. Better chunking
+
+Compare:
+
+```text
+Character chunking
+Sentence chunking
+Paragraph chunking
+Token-aware chunking
+```
+
+Measure their effect on retrieval.
+
+---
+
+## 3. Multiple ground-truth chunks
+
+Change the evaluation format from:
+
+```text
+ground_truth_chunk_id
+```
+
+to something like:
+
+```text
+ground_truth_chunk_ids
+```
+
+Example:
+
+```json
+{
+  "question": "...",
+  "ground_truth_chunk_ids": [
+    "doc_chunk_2",
+    "doc_chunk_3"
+  ]
+}
+```
+
+Then calculate more realistic precision/recall.
+
+---
+
+## 4. Reranking
+
+Implement:
+
+```text
+Question
+ ↓
+MiniLM embedding
+ ↓
+FAISS top-20
+ ↓
+CrossEncoder reranker
+ ↓
+Top-5
+ ↓
+LLM
+```
+
+Compare:
+
+```text
+without reranking
+vs
+with reranking
+```
+
+---
+
+## 5. Latency measurement
+
+Measure:
+
+```text
+Embedding latency
+Retrieval latency
+Reranking latency
+Generation latency
+Total latency
+```
+
+This makes the project more engineering-oriented.
+
+---
+
+## 6. Experiment runner
+
+Create a framework where we can test:
+
+```text
+chunk_size = 200 / 400 / 800
+
+top_k = 1 / 3 / 5 / 10
+
+reranker = on / off
+
+embedding_model = model A / model B
+
+LLM = Qwen 1.5B / 3B / 7B
+```
+
+Then automatically produce a comparison table.
+
+---
+
+## 7. Failure analysis
+
+Automatically identify questions where:
+
+```text
+retrieval failed
+generation failed
+faithfulness failed
+relevancy failed
+```
+
+For example:
+
+```text
+Question #17
+
+Retrieval: ❌
+Faithfulness: ❌
+Relevancy: ✅
+
+Likely failure:
+Retriever returned irrelevant chunks.
+```
+
+This is an important portfolio feature.
+
+---
+
+## 8. Improved dashboard
+
+V2 Streamlit dashboard should show:
+
+```text
+Overall Metrics
+
+Recall@K
+Precision@K
+MRR
+Faithfulness
+Answer Relevancy
+Latency
+```
+
+and charts for:
+
+```text
+Configuration comparison
+Chunk size comparison
+Top-K comparison
+Reranking comparison
+LLM comparison
+```
+
+Also include failed examples.
+
+---
+
+# 22. Why V2 Is More Impressive
+
+V1 demonstrates:
+
+```text
+"I can build a RAG pipeline and evaluate it."
+```
+
+V2 demonstrates:
+
+```text
+"I can experimentally analyze, diagnose, and optimize
+a RAG system."
+```
+
+For recruiters, V2 demonstrates:
+
+* ML engineering
+* Information retrieval
+* Transformer embeddings
+* Vector search
+* LLM evaluation
+* Experiment design
+* Performance optimization
+* Failure analysis
+* Data-driven engineering decisions
+
+---
+
+# 23. Project Development Philosophy
+
+Do NOT over-engineer initially.
+
+Avoid immediately adding:
+
+* React
+* Kubernetes
+* Docker
+* Pinecone
+* Weaviate
+* complex cloud infrastructure
+* paid APIs
+
+The project should first become a strong local Python system.
+
+Recommended stack:
+
+```text
+Python
+Sentence Transformers
+FAISS
+Ollama
+Qwen
+CrossEncoder
+Scikit-learn
+Streamlit
+```
+
+Later, deployment can be considered.
+
+---
+
+# 24. How to Run V1
+
+From:
+
+```text
+D:\Installation\RAG\rag-eval-system\rag-eval-system
+```
+
+activate environment:
+
+```powershell
+venv\Scripts\activate
+```
+
+Build index:
+
+```powershell
+python -m src.rag.index --corpus data/corpus
+```
+
+Run evaluation:
+
+```powershell
+python -m src.eval.run_eval --eval-set data/eval_set/eval_set.json
+```
+
+Run tests:
+
+```powershell
+pytest
+```
+
+Run dashboard:
+
+```powershell
+streamlit run src/eval/dashboard.py
+```
+
+---
+
+# 25. Current Exact Status
+
+Current status:
+
+```text
+✅ Project extracted
+✅ Python virtual environment created
+✅ Dependencies installed
+✅ Ollama installed
+✅ Qwen 2.5 1.5B available/being used
+✅ PyTorch issue resolved enough for evaluation to run
+✅ RAG evaluation command successfully executed
+✅ results.json successfully generated
+⚠️ Retrieval evaluation currently shows Recall@3 = 0
+⚠️ Faithfulness currently = 0
+✅ Answer Relevancy = 0.838
+⚠️ Need to investigate corpus/index/ground-truth mismatch
+```
+
+The immediate next step is:
+
+### CHECK THE CURRENT `data/corpus/` CONTENTS
+
+Do NOT start V2 yet.
+
+First determine why:
+
+```text
+Expected:
+automobile_doc_chunk_0
+```
+
+was not retrieved, while:
+
+```text
+sample_doc_chunk_3
+sample_doc_chunk_4
+sample_doc_chunk_2
+```
+
+were retrieved.
+
+After fixing/understanding that baseline, evaluate V1 again.
+
+Only then begin V2 improvements.
+
+---
+
+# 26. How I Want the New Chat to Help Me
+
+When continuing this project, act as a **senior AI/ML engineer and mentor**.
+
+Please:
+
+1. Understand the existing V1 before suggesting changes.
+2. Do not rewrite the entire project unnecessarily.
+3. Give commands that work on Windows PowerShell.
+4. Keep CPU/no-GPU constraints in mind.
+5. Explain why each change is necessary.
+6. Prefer incremental improvements.
+7. Test/debug one component at a time.
+8. Distinguish actual errors from warnings.
+9. Help me understand the ML concepts behind the code.
+10. Help me turn the final project into a strong recruiter/interview portfolio project.
+
+Current immediate task:
+
+> **Inspect the corpus/index/ground-truth mismatch causing q003 to have Recall@3 = 0 and Faithfulness = 0, before making V2 changes.**
+
