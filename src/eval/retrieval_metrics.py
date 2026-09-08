@@ -1,47 +1,98 @@
 """
-Retrieval evaluation metrics, implemented from first principles.
+Retrieval evaluation metrics.
 
-All functions take:
-    retrieved_ids: list of chunk_ids returned by the retriever, ranked best-first
-    ground_truth_id: the single correct chunk_id for this query
+Supports one or multiple relevant chunk IDs.
 
-(Extend to multiple ground-truth ids per query if your eval set needs it —
-these functions assume one relevant chunk per question, which is the common
-case for a hand-curated eval set of this size.)
+All functions expect:
+
+retrieved_ids:
+    List of chunk IDs returned by the retriever,
+    ranked best-first.
+
+relevant_ids:
+    List of chunk IDs considered relevant.
 """
 
 
-def recall_at_k(retrieved_ids: list[str], ground_truth_id: str, k: int) -> float:
-    """1.0 if the ground-truth chunk appears in the top-k retrieved, else 0.0."""
-    return 1.0 if ground_truth_id in retrieved_ids[:k] else 0.0
-
-
-def precision_at_k(retrieved_ids: list[str], ground_truth_id: str, k: int) -> float:
-    """Fraction of the top-k retrieved chunks that are relevant.
-
-    With a single ground-truth chunk per query, this is either 1/k (hit) or 0 (miss) —
-    included for completeness and to generalize cleanly if you extend the eval set
-    to multiple relevant chunks per question.
+def recall_at_k(
+    retrieved_ids: list[str],
+    relevant_ids: list[str],
+    k: int,
+) -> float:
     """
+    Recall@K = number of relevant chunks retrieved in top-K
+               divided by total number of relevant chunks.
+    """
+
+    if not relevant_ids:
+        return 0.0
+
+    retrieved_top_k = set(retrieved_ids[:k])
+    relevant = set(relevant_ids)
+
+    hits = len(retrieved_top_k & relevant)
+
+    return hits / len(relevant)
+
+
+def precision_at_k(
+    retrieved_ids: list[str],
+    relevant_ids: list[str],
+    k: int,
+) -> float:
+    """
+    Precision@K = relevant chunks in top-K / number retrieved in top-K.
+    """
+
     top_k = retrieved_ids[:k]
+
     if not top_k:
         return 0.0
-    hits = sum(1 for cid in top_k if cid == ground_truth_id)
+
+    relevant = set(relevant_ids)
+
+    hits = sum(
+        1
+        for chunk_id in top_k
+        if chunk_id in relevant
+    )
+
     return hits / len(top_k)
 
 
-def reciprocal_rank(retrieved_ids: list[str], ground_truth_id: str) -> float:
-    """1 / rank of the first correct hit; 0 if not found."""
-    for rank, cid in enumerate(retrieved_ids, start=1):
-        if cid == ground_truth_id:
+def reciprocal_rank(
+    retrieved_ids: list[str],
+    relevant_ids: list[str],
+) -> float:
+    """
+    Reciprocal Rank = 1 / rank of the first relevant chunk.
+    Returns 0 if no relevant chunk is retrieved.
+    """
+
+    relevant = set(relevant_ids)
+
+    for rank, chunk_id in enumerate(
+        retrieved_ids,
+        start=1,
+    ):
+        if chunk_id in relevant:
             return 1.0 / rank
+
     return 0.0
 
 
-def mean_reciprocal_rank(all_retrieved_ids: list[list[str]], all_ground_truth_ids: list[str]) -> float:
-    """MRR averaged across a full eval set."""
+def mean_reciprocal_rank(
+    all_retrieved_ids: list[list[str]],
+    all_relevant_ids: list[list[str]],
+) -> float:
+    """
+    Mean Reciprocal Rank across multiple queries.
+    """
+
     scores = [
-        reciprocal_rank(retrieved, gt)
-        for retrieved, gt in zip(all_retrieved_ids, all_ground_truth_ids)
+        reciprocal_rank(retrieved, relevant)
+        for retrieved, relevant
+        in zip(all_retrieved_ids, all_relevant_ids)
     ]
+
     return sum(scores) / len(scores) if scores else 0.0

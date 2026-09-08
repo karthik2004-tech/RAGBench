@@ -1,8 +1,11 @@
 [
-{
-  "id": "q003",
-  "question": "What sensors are commonly used in ADAS (Advanced Driver Assistance Systems) to detect nearby objects?",
-  "ground_truth_answer": "ADAS systems commonly use a combination of radar, LiDAR, ultrasonic sensors, and cameras to detect and track nearby objects such as vehicles, pedestrians, and obstacles.",
-  "ground_truth_chunk_id": "sample_doc_chunk_3"
-}
+    {
+        "id": "q003",
+        "question": "What sensors are commonly used in ADAS (Advanced Driver Assistance Systems) to detect nearby objects?",
+        "ground_truth_answer": "ADAS systems commonly use radar, LiDAR, ultrasonic sensors, and cameras to detect and track nearby objects such as vehicles, pedestrians, and obstacles.",
+        "relevant_chunk_ids": [
+            "sample_doc_chunk_3",
+            "sample_doc_chunk_4"
+        ]
+    }
 ]
