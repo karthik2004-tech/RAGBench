@@ -1,8 +1,8 @@
 # RAGBench — RAG Evaluation & Optimization Framework
 
-RAGBench is an open-source framework for evaluating and benchmarking Retrieval-Augmented Generation (RAG) systems.
+RAGBench is an open-source framework for evaluating, benchmarking, and eventually optimizing **Retrieval-Augmented Generation (RAG)** systems.
 
-The project started as a RAG pipeline with built-in evaluation and is now evolving into a reusable, framework-agnostic evaluation platform that can be used with different RAG implementations.
+The project started as a single RAG pipeline with built-in evaluation and is evolving into a reusable, framework-agnostic evaluation platform that can be used with different RAG implementations.
 
 ---
 
@@ -20,13 +20,14 @@ The long-term goal is to provide developers with a practical tool to:
 - Compare different RAG configurations
 - Identify retrieval and generation failures
 - Measure answer reliability
+- Diagnose RAG failures
 - Optimize RAG pipelines based on measurable results
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Architecture
 
-### V1 — Baseline RAG Pipeline
+## V1 — Baseline RAG Pipeline
 
 ```text
 Documents
@@ -50,34 +51,43 @@ Generated Answer
 Evaluation
 ```
 
-### V2 Phase 1 — Reusable Evaluation Core
+---
 
-The major change in Phase 1 is separating the evaluation framework from a specific RAG implementation.
+## V2 — RAGBench Evaluation Framework
+
+The V2 architecture separates the evaluation framework from the original RAG implementation.
 
 ```text
-                 Any RAG System
-                       ↓
-                 RAGSystem API
-                       ↓
-                  RAGEvaluator
-                       ↓
-          ┌────────────┴────────────┐
-          ↓                         ↓
-   Retrieval Metrics        Generation Metrics
-          ↓                         ↓
- Recall / Precision        Faithfulness / Relevancy
-          └────────────┬────────────┘
-                       ↓
-                Evaluation Results
+                         Any RAG System
+                              ↓
+                         RAGSystem API
+                              ↓
+                         RAGEvaluator
+                              ↓
+              ┌───────────────┴───────────────┐
+              ↓                               ↓
+       Retrieval Evaluation            Generation Evaluation
+              ↓                               ↓
+    Recall / Precision / RR        Faithfulness / Relevancy
+              ↓                               ↓
+              └───────────────┬───────────────┘
+                              ↓
+                    Benchmark & Comparison
+                              ↓
+                       Evaluation Results
+                              ↓
+                    Failure Diagnosis
+                              ↓
+                    RAG Optimization
 ```
 
-This allows RAGBench to evaluate different RAG systems without requiring them to use the same retriever, embedding model, vector search engine, or LLM.
+The framework is designed so that an external RAG system can be evaluated without requiring it to use the same retriever, embedding model, vector search engine, or LLM as RAGBench.
 
 ---
 
-## ✨ Features
+# ✨ Features
 
-### 🔎 Retrieval Evaluation
+## 🔎 Retrieval Evaluation
 
 RAGBench currently supports:
 
@@ -85,17 +95,48 @@ RAGBench currently supports:
 - Precision@K
 - Reciprocal Rank
 - Mean Reciprocal Rank (MRR)
-- Multiple relevant chunks per evaluation question
+- Multiple reference passages
+- Sentence-level reference evidence matching
+- Evidence-based Recall@K
 
-### 🤖 Generation Evaluation
+### Evidence-based Recall
+
+Instead of only checking whether a retrieved chunk is considered relevant, RAGBench measures how much of the required reference evidence was actually retrieved.
+
+```text
+Reference Passages
+        ↓
+Reference Sentences
+        ↓
+Retrieved Top-K Chunks
+        ↓
+Matched Evidence
+        ↓
+Evidence Coverage
+        ↓
+Recall@K
+```
+
+This makes Recall more meaningful for questions where multiple pieces of evidence are required.
+
+---
+
+## 🤖 Generation Evaluation
+
+RAGBench supports:
 
 - Faithfulness evaluation using Natural Language Inference (NLI)
 - Answer Relevancy using semantic similarity
+- Answer Correctness
 - Per-claim faithfulness analysis
 
-### 🧩 Framework-Agnostic RAG Interface
+> **Note:** Faithfulness is currently implemented using a local NLI-based heuristic. It should therefore be interpreted as an evaluation signal rather than an absolute measure of factual correctness.
 
-RAG systems can implement the standard:
+---
+
+## 🧩 Framework-Agnostic RAG Interface
+
+RAG systems can implement the standard RAGBench interface:
 
 ```python
 class RAGSystem:
@@ -106,49 +147,272 @@ class RAGSystem:
 
 This creates a common interface between external RAG systems and RAGBench.
 
-### 🔌 Adapters
+A developer can therefore evaluate a custom RAG implementation without rewriting the evaluation framework.
 
-Existing RAG pipelines can be connected to RAGBench through adapters. The project currently includes an adapter for the original V1 RAG pipeline.
+---
 
-### 🧪 Automated Testing
+## 🔌 Adapters
 
-The project includes automated tests covering:
+Existing RAG pipelines can be connected to RAGBench through adapters.
+
+The project currently includes an adapter for the original V1 RAG pipeline.
+
+```text
+Existing RAG
+     ↓
+Adapter
+     ↓
+RAGSystem Interface
+     ↓
+RAGBench Evaluator
+     ↓
+Metrics
+```
+
+---
+
+## 🧪 Automated Testing
+
+RAGBench includes automated tests covering:
 
 - RAG system interface
 - Retrieval metrics
-- Multiple relevant chunks
+- Passage matching
+- Multiple reference evidence
+- Evidence-based Recall
 - V1 adapter
-- Framework integration
+- Benchmark configuration
+- Benchmark runner
+- Experiment storage
+- Experiment comparison
 
-**Current status: 12 tests passed**
+### Current Test Status
 
----
-
-## 📊 Example Evaluation
-
-For an ADAS-related question, the current V1 pipeline produced:
-
-| Metric | Score |
-|---|---|
-| Recall@3 | 1.000 |
-| Precision@3 | 0.667 |
-| Reciprocal Rank | 1.000 |
-| Faithfulness | 0.000 |
-| Answer Relevancy | 0.803 |
-
-**Retrieved chunks:**
-
-1. `sample_doc_chunk_3`
-2. `sample_doc_chunk_4`
-3. `sample_doc_chunk_2`
-
-The evaluation shows that the relevant information was successfully retrieved, while the generation metrics provide additional signals about the quality of the final answer.
-
-> **Note:** Faithfulness is currently implemented using a local NLI-based heuristic, so the score should be interpreted as an evaluation signal rather than an absolute measure of factual correctness.
+```text
+44 passed
+```
 
 ---
 
-## 🛠️ Tech Stack
+# 📊 Benchmarking
+
+Phase 2 introduced an automated experimentation system for comparing different RAG configurations.
+
+RAGBench can currently run experiments across:
+
+### Chunk Size
+
+```text
+200
+400
+600
+800
+```
+
+### Chunk Overlap
+
+```text
+0
+25
+50
+100
+```
+
+### Top-K
+
+```text
+1
+2
+3
+5
+```
+
+Each experiment automatically:
+
+1. Creates the configured index
+2. Runs the evaluation dataset
+3. Calculates evaluation metrics
+4. Measures latency
+5. Stores the experiment results
+6. Makes the results available for comparison
+
+---
+
+# 📈 Example Benchmark Results
+
+The Phase 2 benchmark ran 10 different configurations.
+
+| Experiment | Chunk | Overlap | Top-K | Recall | Precision | RR | Relevancy | Faithfulness | Correctness | Latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| baseline | 400 | 50 | 3 | 1.000 | 0.400 | 0.867 | 0.763 | 0.000 | 0.734 | 1.055 |
+| chunk_200 | 200 | 50 | 3 | 0.720 | 0.333 | 0.800 | 0.795 | 0.400 | 0.753 | 0.640 |
+| chunk_600 | 600 | 50 | 3 | 1.000 | 0.333 | 0.800 | 0.754 | 0.000 | 0.757 | 0.811 |
+| chunk_800 | 800 | 50 | 3 | 1.000 | 0.333 | 0.900 | 0.718 | 0.000 | 0.754 | 0.882 |
+| overlap_0 | 400 | 0 | 3 | 1.000 | 0.400 | 0.867 | 0.788 | 0.000 | 0.691 | 0.678 |
+| overlap_25 | 400 | 25 | 3 | 1.000 | 0.400 | 0.867 | 0.778 | 0.000 | 0.749 | 0.546 |
+| overlap_100 | 400 | 100 | 3 | 1.000 | 0.467 | 0.867 | 0.809 | 0.200 | 0.805 | 0.690 |
+| topk_1 | 400 | 50 | 1 | 0.760 | 0.800 | 0.800 | 0.804 | 0.200 | 0.770 | 0.464 |
+| topk_2 | 400 | 50 | 2 | 0.800 | 0.500 | 0.800 | 0.824 | 0.000 | 0.744 | 0.525 |
+| topk_5 | 400 | 50 | 5 | 1.000 | 0.240 | 0.867 | 0.769 | 0.000 | 0.790 | 0.864 |
+
+The benchmark demonstrates that changing chunk size, overlap, and Top-K can affect retrieval quality, answer quality, and latency differently.
+
+> **Important:** Individual metrics measure different aspects of a RAG system. A configuration that performs strongly on one metric may not perform similarly on another.
+
+---
+
+# 🔬 Phase 2 — Benchmarking
+
+## Goal
+
+> **Which RAG configuration performs differently under controlled experiments?**
+
+Phase 2 is now complete.
+
+### Completed
+
+- [x] Experiment configuration
+- [x] Automated experiment runner
+- [x] Experiment result storage
+- [x] Experiment comparison
+- [x] Chunk-size experiments
+- [x] Chunk-overlap experiments
+- [x] Top-K experiments
+- [x] Retrieval metrics
+- [x] Generation metrics
+- [x] Answer correctness
+- [x] Latency measurement
+- [x] Reference-passage evaluation
+- [x] Multi-sentence reference evidence
+- [x] Evidence-based Recall@K
+- [x] Automated testing
+
+### Phase 2 Result
+
+RAGBench can now systematically run controlled RAG experiments and compare their measured retrieval, generation, correctness, and efficiency characteristics.
+
+---
+
+# 🧠 Evaluation Metrics
+
+## Recall@K
+
+RAGBench uses reference evidence to measure how much required information was retrieved within the top-K results.
+
+```text
+Recall@K =
+Matched reference evidence
+───────────────────────────
+Total reference evidence
+```
+
+---
+
+## Precision@K
+
+Measures the proportion of retrieved top-K chunks that contain relevant reference evidence.
+
+```text
+Precision@K =
+Relevant retrieved chunks
+────────────────────────
+Retrieved top-K chunks
+```
+
+---
+
+## Reciprocal Rank
+
+Measures the position of the first relevant retrieved result.
+
+```text
+RR = 1 / rank of first relevant result
+```
+
+A relevant result at rank 1 gives:
+
+```text
+RR = 1.0
+```
+
+---
+
+## Mean Reciprocal Rank
+
+MRR calculates the average Reciprocal Rank across multiple evaluation questions.
+
+```text
+MRR = Average(RR)
+```
+
+---
+
+## Faithfulness
+
+Faithfulness measures whether claims made by the generated answer are supported by the retrieved context.
+
+The current implementation:
+
+```text
+Generated Answer
+       ↓
+Split into claims
+       ↓
+NLI evaluation
+       ↓
+Supported claims
+       ↓
+Faithfulness score
+```
+
+```text
+Faithfulness =
+Supported claims
+────────────────
+Total claims
+```
+
+---
+
+## Answer Relevancy
+
+Answer Relevancy measures semantic similarity between the question and generated answer using embeddings.
+
+It provides a signal for whether the generated answer is addressing the question rather than drifting off-topic.
+
+> Answer relevancy measures semantic relatedness, not factual correctness.
+
+---
+
+## Answer Correctness
+
+Answer Correctness evaluates how closely the generated answer matches the expected ground-truth answer.
+
+This provides an additional signal beyond retrieval quality and semantic relevancy.
+
+---
+
+## Latency
+
+RAGBench measures the time required to process an evaluation question through the RAG pipeline.
+
+```text
+Question
+   ↓
+Retrieval
+   ↓
+Generation
+   ↓
+Evaluation
+   ↓
+Latency
+```
+
+Latency allows experiments to be compared not only by quality metrics but also by execution time.
+
+---
+
+# 🛠️ Tech Stack
 
 | Technology | Purpose |
 |---|---|
@@ -168,7 +432,7 @@ The project is designed to run on CPU-friendly hardware without requiring a dedi
 
 ---
 
-## 📁 Project Structure
+# 📁 Project Structure
 
 ```text
 rag-eval-system/
@@ -181,9 +445,17 @@ rag-eval-system/
 │   │   ├── eval_set.json
 │   │   └── results.json
 │   │
-│   └── index/
-│       ├── index.faiss
-│       └── records.pkl
+│   └── experiments/
+│       ├── baseline/
+│       ├── chunk_200/
+│       ├── chunk_600/
+│       ├── chunk_800/
+│       ├── overlap_0/
+│       ├── overlap_25/
+│       ├── overlap_100/
+│       ├── topk_1/
+│       ├── topk_2/
+│       └── topk_5/
 │
 ├── src/
 │   │
@@ -198,6 +470,7 @@ rag-eval-system/
 │   │   ├── retrieval_metrics.py
 │   │   ├── faithfulness.py
 │   │   ├── answer_relevancy.py
+│   │   ├── answer_correctness.py
 │   │   ├── run_eval.py
 │   │   └── dashboard.py
 │   │
@@ -214,25 +487,39 @@ rag-eval-system/
 │       │
 │       ├── evaluation/
 │       │   ├── __init__.py
-│       │   └── evaluator.py
+│       │   ├── evaluator.py
+│       │   └── passage_matching.py
 │       │
-│       └── adapters/
+│       ├── adapters/
+│       │   ├── __init__.py
+│       │   ├── v1_adapter.py
+│       │   └── v1_benchmark.py
+│       │
+│       └── benchmark/
 │           ├── __init__.py
-│           └── v1_adapter.py
+│           ├── config.py
+│           ├── runner.py
+│           ├── storage.py
+│           └── comparison.py
 │
 ├── examples/
 │   ├── __init__.py
 │   ├── custom_rag/
-│   │   ├── __init__.py
-│   │   └── example_rag.py
-│   └── evaluate_v1.py
+│   ├── evaluate_v1.py
+│   ├── run_experiments.py
+│   └── compare_experiments.py
 │
 ├── notebooks/
 │
 ├── tests/
 │   ├── test_ragbench_interface.py
 │   ├── test_retrieval_metrics.py
-│   └── test_v1_adapter.py
+│   ├── test_v1_adapter.py
+│   ├── test_passage_matching.py
+│   ├── test_benchmark_config.py
+│   ├── test_benchmark_runner.py
+│   ├── test_experiment_storage.py
+│   └── test_experiment_comparison.py
 │
 ├── requirements.txt
 ├── README.md
@@ -241,18 +528,20 @@ rag-eval-system/
 
 ---
 
-## ⚙️ Installation
+# ⚙️ Installation
 
-### 1. Clone the repository
+## 1. Clone the repository
 
 ```bash
 git clone <your-repository-url>
 cd rag-eval-system
 ```
 
-### 2. Create a virtual environment
+---
 
-**Windows PowerShell**
+## 2. Create a virtual environment
+
+### Windows PowerShell
 
 ```powershell
 python -m venv venv
@@ -264,13 +553,15 @@ Activate it:
 .\venv\Scripts\Activate.ps1
 ```
 
-### 3. Install dependencies
+---
+
+## 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-If Pytest is not included in the requirements:
+If Pytest is not included:
 
 ```bash
 python -m pip install pytest
@@ -278,7 +569,7 @@ python -m pip install pytest
 
 ---
 
-## 🤖 Local LLM Setup
+# 🤖 Local LLM Setup
 
 RAGBench uses Ollama for local answer generation.
 
@@ -292,7 +583,7 @@ Make sure Ollama is running before executing the generation or evaluation pipeli
 
 ---
 
-## 📚 Build the Vector Index
+# 📚 Build the Vector Index
 
 Place `.md` or `.txt` documents inside:
 
@@ -300,24 +591,16 @@ Place `.md` or `.txt` documents inside:
 data/corpus/
 ```
 
-Then build the FAISS index:
+Build the FAISS index:
 
 ```bash
 python -m src.rag.index --corpus data/corpus
 ```
 
-This creates:
-
-```text
-data/index/
-├── index.faiss
-└── records.pkl
-```
-
 The indexing pipeline:
 
 1. Loads documents
-2. Splits documents into overlapping chunks
+2. Splits documents into sentence-aware chunks
 3. Generates embeddings using all-MiniLM-L6-v2
 4. Normalizes embeddings
 5. Builds a FAISS inner-product index
@@ -325,7 +608,7 @@ The indexing pipeline:
 
 ---
 
-## 🔎 Test Retrieval
+# 🔎 Test Retrieval
 
 Run:
 
@@ -337,7 +620,7 @@ The retriever returns the top-K chunks along with similarity scores.
 
 ---
 
-## 🤖 Generate an Answer
+# 🤖 Generate an Answer
 
 Run:
 
@@ -351,51 +634,57 @@ The pipeline:
 2. Retrieves relevant chunks
 3. Builds the context
 4. Sends the context to Qwen
-5. Generates a grounded answer
+5. Generates an answer
 
 ---
 
-## 📊 Run RAGBench Evaluation
+# 📊 Run RAGBench Evaluation
 
-The original V1 RAG pipeline can be evaluated through the V2 RAGBench interface.
-
-Run:
+Evaluate the original V1 RAG pipeline through the RAGBench evaluation interface:
 
 ```bash
 python -m examples.evaluate_v1
 ```
 
-Example output:
+---
+
+# 🧪 Run the Benchmark Experiments
+
+Phase 2 provides automated experiments for different RAG configurations.
+
+Run:
+
+```bash
+python examples/run_experiments.py
+```
+
+The experiment runner creates separate experiment directories and stores their results.
+
+Then compare the experiments:
+
+```bash
+python examples/compare_experiments.py
+```
+
+The comparison reports:
 
 ```text
-===== RAGBench V2 Evaluation =====
-
-Question: What sensors are commonly used in ADAS (Advanced Driver Assistance Systems) to detect nearby objects?
-
-Recall@3: 1.000
-Precision@3: 0.667
-Reciprocal Rank: 1.000
-Faithfulness: 0.000
-Answer Relevancy: 0.803
-
-Generated Answer:
-Radar sensors and ultrasonic sensors are commonly used in ADAS to detect nearby objects.
-
-Retrieved Chunks:
-- sample_doc_chunk_3 (score=0.725)
-- sample_doc_chunk_4 (score=0.670)
-- sample_doc_chunk_2 (score=0.225)
+Recall
+Precision
+Reciprocal Rank
+Answer Relevancy
+Faithfulness
+Answer Correctness
+Latency
 ```
 
 ---
 
-## 🧩 Using RAGBench With a Custom RAG System
-
-The main purpose of V2 Phase 1 is to allow developers to evaluate different RAG implementations.
+# 🧩 Using RAGBench With a Custom RAG System
 
 A custom RAG system can implement the `RAGSystem` interface.
 
-**Example:**
+Example:
 
 ```python
 from src.ragbench.core.interfaces import RAGSystem
@@ -405,6 +694,7 @@ class MyRAG(RAGSystem):
 
     def retrieve(self, question, top_k=3):
         # Your retrieval implementation
+
         return [
             {
                 "chunk_id": "doc_1",
@@ -415,6 +705,7 @@ class MyRAG(RAGSystem):
 
     def generate(self, question, retrieved_chunks):
         # Your generation implementation
+
         return "Generated answer"
 ```
 
@@ -433,204 +724,197 @@ results = evaluator.evaluate(
 )
 ```
 
-The important concept is:
+The architecture is:
 
 ```text
 Your RAG
-    ↓
+   ↓
 RAGSystem Interface
-    ↓
+   ↓
 RAGBench
-    ↓
+   ↓
 Evaluation
+   ↓
+Metrics
 ```
 
 Your RAG system does not need to use the same internal implementation as RAGBench.
 
 ---
 
-## 🧪 Running Tests
+# 🧪 Running Tests
 
 Run the complete test suite:
 
-```bash
-python -m pytest
+```powershell
+$env:PYTHONPATH = "."
+pytest -q
 ```
 
-**Current Phase 1 status: 12 passed**
+Current test status:
 
-The tests verify the core interface, evaluation metrics, adapter integration, and framework behavior.
+```text
+44 passed
+```
+
+The tests verify:
+
+- Core RAG interface
+- Retrieval metrics
+- Passage matching
+- Reference evidence
+- Evidence-based Recall
+- V1 adapter
+- Benchmark configuration
+- Benchmark execution
+- Experiment storage
+- Experiment comparison
 
 ---
 
-## 🧠 Evaluation Metrics
+# 🔬 Phase 1 — Reusable Evaluation Core ✅
 
-### Recall@K
+### Goal
 
-Measures how many of the relevant chunks were successfully retrieved within the top-K results.
+> **Can RAGBench evaluate different RAG systems?**
 
-```text
-Recall@K = Relevant chunks retrieved in Top-K / Total relevant chunks
-```
-
-Higher is generally better.
-
-### Precision@K
-
-Measures how many retrieved chunks in the top-K results were actually relevant.
-
-```text
-Precision@K = Relevant chunks in Top-K / Total chunks retrieved in Top-K
-```
-
-Higher is generally better.
-
-### Reciprocal Rank
-
-Measures how high the first relevant chunk appears in the ranked retrieval results.
-
-```text
-RR = 1 / rank of first relevant result
-```
-
-A relevant result appearing at rank 1 gives `RR = 1.0`.
-
-### Mean Reciprocal Rank (MRR)
-
-MRR calculates the average reciprocal rank across multiple evaluation questions. Higher values indicate that relevant information tends to appear near the top of the retrieval results.
-
-### Faithfulness
-
-Faithfulness measures whether claims made by the generated answer are supported by the retrieved context.
-
-The current implementation:
-
-1. Splits the generated answer into claims
-2. Uses an NLI model to evaluate each claim against the retrieved context
-3. Calculates the fraction of supported claims
-
-```text
-Faithfulness = Supported claims / Total claims
-```
-
-### Answer Relevancy
-
-Answer Relevancy measures semantic similarity between the question and generated answer using embeddings. It provides a signal for whether the generated answer is addressing the question rather than drifting off-topic.
-
-> Answer relevancy measures semantic relatedness, not factual correctness.
-
----
-
-## 🔬 V2 Phase 1
-
-**Goal:** Can RAGBench evaluate different RAG systems?
-
-Phase 1 focuses on creating a reusable evaluation core rather than optimizing a single RAG pipeline.
-
-**Completed:**
+### Completed
 
 - [x] Framework-agnostic RAGSystem interface
 - [x] Reusable RAGEvaluator
 - [x] Standardized evaluation dataset
-- [x] Support for multiple relevant chunks
-- [x] Recall@K
-- [x] Precision@K
-- [x] Reciprocal Rank
-- [x] MRR
+- [x] Multiple relevant reference passages
+- [x] Retrieval metrics
+- [x] Generation metrics
 - [x] Faithfulness evaluation
 - [x] Answer Relevancy
+- [x] Answer Correctness
 - [x] V1 RAG adapter
 - [x] Custom RAG example
-- [x] Automated tests
+- [x] Automated testing
 
-**Phase 1 Result:** The evaluation layer is now separated from the original RAG implementation. This means RAGBench can evaluate a RAG system through a common interface instead of requiring the system to use the original V1 implementation.
+### Result
+
+The evaluation layer is separated from the original RAG implementation.
 
 ---
 
-## 📈 Roadmap
+# 📈 Phase 2 — Benchmarking & Experiment Comparison ✅
 
-### Phase 1 — Reusable Evaluation Core ✅
+### Goal
 
-**Goal:** Can RAGBench evaluate different RAG systems?
+> **How do different RAG configurations affect measurable performance?**
 
-Completed:
-- Framework-agnostic RAG interface
-- Reusable evaluation engine
-- Standardized evaluation dataset
-- Multiple relevant chunks
-- Retrieval metrics
-- Generation metrics
-- V1 adapter
-- Custom RAG example
-- Automated testing
+### Completed
 
-### Phase 2 — Benchmarking & Experiment Comparison 🔄
+- [x] Automated experiment configuration
+- [x] Automated experiment runner
+- [x] Chunk-size experiments
+- [x] Chunk-overlap experiments
+- [x] Top-K experiments
+- [x] Experiment result storage
+- [x] Experiment comparison
+- [x] Retrieval metrics
+- [x] Generation metrics
+- [x] Answer correctness
+- [x] Latency measurement
+- [x] Reference evidence evaluation
+- [x] Evidence-based Recall@K
+- [x] 10 benchmark configurations
+- [x] 44 automated tests
 
-**Goal:** Which RAG configuration performs better?
+### Result
 
-Planned experiments:
-- Chunk size
-- Chunk overlap
-- Top-K
-- Embedding models
-- Prompt configurations
-- LLM configurations
+RAGBench can now run controlled experiments and compare different RAG configurations using multiple quality and efficiency metrics.
 
-The goal is to run controlled experiments and compare the resulting evaluation metrics.
+---
 
-### Phase 3 — Diagnosis & Optimization 🔜
+# 🔜 Phase 3 — Diagnosis & Optimization
 
-**Goal:** Why did my RAG fail?
+### Goal
+
+> **Why did my RAG fail?**
 
 Planned features:
-- Retrieval failure analysis
-- Generation failure analysis
-- Latency measurement
-- Reranking
-- Hybrid retrieval
-- Optimization recommendations
 
-### Phase 4 — Open-Source Developer Tool 🔜
+- [ ] Retrieval failure analysis
+- [ ] Generation failure analysis
+- [ ] Automatic failure classification
+- [ ] Per-question diagnosis
+- [ ] Failure analysis dashboard
+- [ ] Reranking
+- [ ] Hybrid retrieval
+- [ ] Optimization experiments
+- [ ] Optimization recommendations
 
-**Goal:** Make RAGBench easy for other developers to use.
-
-Planned:
-- Command-line interface
-- Improved dashboard
-- Configuration-based experiments
-- Python package
-- Documentation
-- Example integrations
-- Contribution guidelines
-- Open-source release
-
----
-
-## 🎯 Project Vision
-
-RAGBench is being developed around a simple idea:
-
-> Don't just build RAG systems. Measure them, understand them, and improve them.
-
-The project is evolving from a single RAG pipeline into a reusable evaluation and benchmarking framework for RAG developers. The long-term vision is to help developers answer:
+The planned diagnostic flow is:
 
 ```text
-Does my RAG work?
-       ↓
-How well does it work?
-       ↓
-Why does it fail?
-       ↓
-Which configuration is better?
-       ↓
-How can I improve it?
+Question
+   ↓
+Retrieved Context
+   ↓
+Retrieval Metrics
+   ↓
+Generated Answer
+   ↓
+Generation Metrics
+   ↓
+Failure Diagnosis
+   ↓
+Optimization
 ```
 
 ---
 
-## 👨‍💻 Author
+# 🔜 Phase 4 — Open-Source Developer Tool
 
-**karthik telukutla**
+### Goal
+
+> **Make RAGBench easy for other developers to use.**
+
+Planned:
+
+- [ ] Command-line interface
+- [ ] Improved dashboard
+- [ ] Configuration-based experiments
+- [ ] Python package
+- [ ] Documentation
+- [ ] Example integrations
+- [ ] Contribution guidelines
+- [ ] Open-source release
+
+---
+
+# 🧠 Project Vision
+
+RAGBench is being developed around a simple idea:
+
+> **Don't just build RAG systems. Measure them, understand them, and improve them.**
+
+The project is evolving from a single RAG pipeline into a reusable evaluation and benchmarking framework for RAG developers.
+
+The long-term workflow is:
+
+```text
+Does my RAG work?
+        ↓
+How well does it work?
+        ↓
+What configuration affects performance?
+        ↓
+Why does it fail?
+        ↓
+How can I improve it?
+        ↓
+Can the improvement be measured?
+```
+
+---
+
+# 👨‍💻 Author
+
+**Karthik Telukutla**
 
 B.Tech | AI/DS | Generative AI | RAG | NLP | Python
 
@@ -638,15 +922,25 @@ Currently building hands-on AI/ML projects focused on RAG systems, evaluation, e
 
 ---
 
-## 📌 Project Status
+# 📌 Project Status
 
-- **Current Version:** V2 — Phase 1
-- **Status:** Phase 1 Completed
-- **Tests:** 12 Passed
-- **Next Milestone:** Phase 2 — Benchmarking & Experiment Comparison
+```text
+Current Version: V2
+
+Phase 1 — Reusable Evaluation Core       ✅ Completed
+Phase 2 — Benchmarking                   ✅ Completed
+Phase 3 — Diagnosis & Optimization       🔜 Next
+Phase 4 — Open-Source Developer Tool     🔜 Planned
+```
+
+### Current Test Status
+
+```text
+44 tests passed
+```
 
 ---
 
-## ⭐ If you find this project useful
+# ⭐ If you find this project useful
 
 Consider giving the repository a star and following the project as RAGBench evolves into a more complete RAG evaluation and optimization framework.
