@@ -52,3 +52,19 @@ class V1RAGAdapter(RAGSystem):
             chunks=retrieved_chunks,
             model=self.llm_model,
         )
+
+    def get_relevant_chunk_ids(
+        self,
+        relevant_documents: List[str],
+    ) -> List[str]:
+        """
+        Return chunks belonging to the specified documents.
+        """
+
+        relevant_documents = set(relevant_documents)
+
+        return [
+            record["chunk_id"]
+            for record in self.retriever.records
+            if record["doc_id"] in relevant_documents
+        ]

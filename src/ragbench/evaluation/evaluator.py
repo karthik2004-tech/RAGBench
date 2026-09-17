@@ -1,4 +1,10 @@
 from typing import Any, Dict, List
+import time
+from src.ragbench.evaluation.passage_matching import (
+    find_relevant_chunks,
+    reference_recall_at_k,
+)
+from src.eval.answer_correctness import answer_correctness_score
 
 from src.ragbench.core.interfaces import RAGSystem
 from src.ragbench.datasets.schema import EvaluationSample
@@ -11,6 +17,7 @@ from src.eval.retrieval_metrics import (
 
 from src.eval.faithfulness import faithfulness_score
 from src.eval.answer_relevancy import answer_relevancy_score
+from src.eval.answer_correctness import answer_correctness_score
 
 
 class RAGEvaluator:
@@ -30,11 +37,18 @@ class RAGEvaluator:
         top_k: int = 3,
     ) -> Dict[str, Any]:
 
-        # Run the RAG system
+        # ----------------------------------------------------
+        # Run the RAG system and measure latency
+        # ----------------------------------------------------
+
+        start_time = time.perf_counter()
+
         result = self.rag_system.answer(
             sample.question,
             top_k=top_k,
         )
+
+        latency = time.perf_counter() - start_time
 
         retrieved_chunks = result["retrieved_chunks"]
 
@@ -46,27 +60,33 @@ class RAGEvaluator:
         generated_answer = result["generated_answer"]
 
         # ----------------------------------------------------
+        # Get relevant ground-truth chunks
+        # ----------------------------------------------------
+
+        relevant_chunk_ids = find_relevant_chunks(
+            retrieved_chunks,
+            sample.reference_passages,
+        )
+
+        # ----------------------------------------------------
         # Retrieval evaluation
         # ----------------------------------------------------
 
-        # V1 retrieval metrics currently support one ground-truth ID.
-        
-
-        recall = recall_at_k(
-            retrieved_ids,
-            sample.relevant_chunk_ids,
-            top_k,
-        )
+        recall = reference_recall_at_k(
+        retrieved_chunks,
+        sample.reference_passages,
+        top_k,
+)
 
         precision = precision_at_k(
             retrieved_ids,
-            sample.relevant_chunk_ids,
+            relevant_chunk_ids,
             top_k,
         )
 
         rr = reciprocal_rank(
             retrieved_ids,
-            sample.relevant_chunk_ids,
+            relevant_chunk_ids,
         )
 
         # ----------------------------------------------------
@@ -79,14 +99,22 @@ class RAGEvaluator:
             for chunk in retrieved_chunks
         )
 
+        # Faithfulness
         faithfulness_result = faithfulness_score(
             generated_answer,
             context,
         )
 
+        # Answer relevancy
         relevancy = answer_relevancy_score(
             sample.question,
             generated_answer,
+        )
+
+        # Answer correctness
+        correctness = answer_correctness_score(
+            generated_answer,
+            sample.ground_truth_answer,
         )
 
         # ----------------------------------------------------
@@ -110,7 +138,10 @@ class RAGEvaluator:
             "generation": {
                 "faithfulness": faithfulness_result,
                 "answer_relevancy": relevancy,
+                "answer_correctness": correctness,
             },
+
+            "latency_seconds": latency,
         }
 
     def evaluate(

@@ -61,3 +61,17 @@ class RAGSystem(ABC):
             "retrieved_chunks": retrieved_chunks,
             "generated_answer": answer,
         }
+    def get_relevant_chunk_ids(
+        self,
+        relevant_documents: List[str],
+    ) -> List[str]:
+        """
+        Map relevant document IDs to chunk IDs for the
+        current RAG configuration.
+
+        This is optional for general RAG systems.
+        """
+
+        raise NotImplementedError(
+            "This RAG system does not support document-to-chunk mapping."
+        )

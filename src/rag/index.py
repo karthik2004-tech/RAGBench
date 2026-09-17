@@ -8,54 +8,161 @@ import argparse
 import json
 import os
 import pickle
+import re
 
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
 
-def chunk_text(text: str, chunk_size: int = 400, overlap: int = 50) -> list[str]:
-    """Simple fixed-size character chunker with overlap.
-
-    Swap this out for a sentence/paragraph-aware chunker as a later
-    improvement — this version is deliberately simple so the effect of
-    chunk size on retrieval quality (see roadmap: ablation runner) is
-    easy to reason about.
+def chunk_text(
+    text: str,
+    chunk_size: int = 400,
+    overlap: int = 50,
+) -> list[str]:
     """
+    Split text into sentence-aware chunks.
+
+    chunk_size is the target number of characters.
+    Sentences are kept intact whenever possible.
+
+    overlap is applied using complete sentences
+    from the previous chunk.
+    """
+
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than 0.")
+
+    if overlap < 0:
+        raise ValueError("chunk_overlap cannot be negative.")
+
+    if overlap >= chunk_size:
+        raise ValueError(
+            "chunk_overlap must be smaller than chunk_size."
+        )
+
+    # Split text into sentences while preserving
+    # sentence boundaries.
+    sentences = re.split(
+        r"(?<=[.!?])\s+",
+        text.strip(),
+    )
+
+    sentences = [
+        sentence.strip()
+        for sentence in sentences
+        if sentence.strip()
+    ]
+
     chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end].strip()
-        if chunk:
-            chunks.append(chunk)
-        start += chunk_size - overlap
+    current_sentences = []
+    current_length = 0
+
+    for sentence in sentences:
+
+        sentence_length = len(sentence)
+
+        # If adding this sentence exceeds the target
+        # and we already have content, finalize the chunk.
+        if (
+            current_sentences
+            and current_length + sentence_length + 1
+            > chunk_size
+        ):
+            chunks.append(
+                " ".join(current_sentences).strip()
+            )
+
+            # Build overlap using complete previous
+            # sentences.
+            overlap_sentences = []
+            overlap_length = 0
+
+            for previous_sentence in reversed(
+                current_sentences
+            ):
+                if (
+                    overlap_length
+                    + len(previous_sentence)
+                    + 1
+                    <= overlap
+                ):
+                    overlap_sentences.insert(
+                        0,
+                        previous_sentence,
+                    )
+                    overlap_length += (
+                        len(previous_sentence) + 1
+                    )
+                else:
+                    break
+
+            current_sentences = overlap_sentences
+            current_length = overlap_length
+
+        current_sentences.append(sentence)
+        current_length += sentence_length + 1
+
+    # Add the final chunk.
+    if current_sentences:
+        chunks.append(
+            " ".join(current_sentences).strip()
+        )
+
     return chunks
 
 
-def load_corpus(corpus_dir: str) -> list[dict]:
-    """Read every .md/.txt file in corpus_dir and chunk it."""
+def load_corpus(
+    corpus_dir: str,
+    chunk_size: int = 400,
+    chunk_overlap: int = 50,
+) -> list[dict]:
+    """Read every .md/.txt file and chunk it."""
+
     records = []
+
     for fname in sorted(os.listdir(corpus_dir)):
+
         if not fname.endswith((".md", ".txt")):
             continue
+
         path = os.path.join(corpus_dir, fname)
+
         with open(path, "r", encoding="utf-8") as f:
             text = f.read()
+
         doc_id = os.path.splitext(fname)[0]
-        for i, chunk in enumerate(chunk_text(text)):
+
+        chunks = chunk_text(
+            text,
+            chunk_size=chunk_size,
+            overlap=chunk_overlap,
+        )
+
+        for i, chunk in enumerate(chunks):
             records.append({
                 "chunk_id": f"{doc_id}_chunk_{i}",
                 "doc_id": doc_id,
                 "text": chunk,
             })
+
     return records
 
 
-def build_index(corpus_dir: str, out_dir: str, model_name: str = "all-MiniLM-L6-v2"):
+def build_index(corpus_dir: str, out_dir: str, model_name: str = "all-MiniLM-L6-v2",chunk_size: int = 400, chunk_overlap: int = 50):
     os.makedirs(out_dir, exist_ok=True)
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than 0.")
 
-    records = load_corpus(corpus_dir)
+    if chunk_overlap < 0:
+        raise ValueError("chunk_overlap cannot be negative.")
+
+    if chunk_overlap >= chunk_size:
+        raise ValueError(
+            "chunk_overlap must be smaller than chunk_size."
+        )
+
+    records = load_corpus(corpus_dir, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     if not records:
         raise ValueError(f"No .md/.txt files found in {corpus_dir}")
 
@@ -85,5 +192,7 @@ if __name__ == "__main__":
     parser.add_argument("--corpus", default="data/corpus")
     parser.add_argument("--out", default="data/index")
     parser.add_argument("--model", default="all-MiniLM-L6-v2")
+    parser.add_argument("--chunk-size", type=int, default=400)
+    parser.add_argument("--chunk-overlap", type=int, default=50)
     args = parser.parse_args()
-    build_index(args.corpus, args.out, args.model)
+    build_index(args.corpus, args.out, args.model,args.chunk_size,args.chunk_overlap)

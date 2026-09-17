@@ -1,0 +1,237 @@
+{
+  "experiment": {
+    "name": "chunk_600",
+    "chunk_size": 600,
+    "chunk_overlap": 50,
+    "top_k": 3,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "llm_model": "qwen2.5:1.5b"
+  },
+  "results": [
+    {
+      "id": "q001",
+      "question": "What is Retrieval-Augmented Generation (RAG)?",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "sample_doc_chunk_1",
+          "doc_id": "sample_doc",
+          "text": "This grounds the model's output in real source\nmaterial rather than relying purely on parametric memory, which reduces\nhallucination and allows the system to answer questions about content the\nunderlying model was never trained on. ## Why Evaluation Matters\n\nA RAG system can fail in two independent places: the retriever can fail to find\nthe right context, or the generator can fail to use the context it was given\nfaithfully. Evaluating the two stages separately is the only way to know which\npart of the pipeline needs improvement when answer quality is poor.",
+          "score": 0.47275203466415405
+        },
+        {
+          "chunk_id": "sample_doc_chunk_0",
+          "doc_id": "sample_doc",
+          "text": "# Sample Corpus Document\n\nReplace this file with your own documents (e.g. your NRSC/ISRO internship report,\nproject READMEs, or design case studies). One markdown or text file per document,\nor one big file — the chunker in `src/rag/index.py` will split it either way. ## About Retrieval-Augmented Generation\n\nRetrieval-Augmented Generation combines a retriever, which finds relevant text\nchunks from a knowledge base, with a language model, which generates an answer\nconditioned on those chunks.",
+          "score": 0.31824031472206116
+        },
+        {
+          "chunk_id": "sample_doc_chunk_3",
+          "doc_id": "sample_doc",
+          "text": "Most\nproduction ADAS systems fuse data from several of these sensors together to\nimprove reliability, since each sensor type has different strengths and\nblind spots.",
+          "score": 0.1339367926120758
+        }
+      ],
+      "generated_answer": "Retrieval-Augmented Generation (RAG) is a method that combines a retriever, which finds relevant text chunks from a knowledge base, with a language model, which generates an answer conditioned on those chunks.",
+      "retrieval": {
+        "recall_at_k": 1.0,
+        "precision_at_k": 0.3333333333333333,
+        "reciprocal_rank": 0.5
+      },
+      "generation": {
+        "faithfulness": {
+          "score": 0.0,
+          "claims": [
+            {
+              "claim": "Retrieval-Augmented Generation (RAG) is a method that combines a retriever, which finds relevant text chunks from a knowledge base, with a language model, which generates an answer conditioned on those chunks.",
+              "entailed": false,
+              "entailment_score": 0.001
+            }
+          ]
+        },
+        "answer_relevancy": 0.824,
+        "answer_correctness": 0.7793735861778259
+      },
+      "latency_seconds": 1.54292989999999
+    },
+    {
+      "id": "q002",
+      "question": "What are the main components of a RAG system?",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "sample_doc_chunk_1",
+          "doc_id": "sample_doc",
+          "text": "This grounds the model's output in real source\nmaterial rather than relying purely on parametric memory, which reduces\nhallucination and allows the system to answer questions about content the\nunderlying model was never trained on. ## Why Evaluation Matters\n\nA RAG system can fail in two independent places: the retriever can fail to find\nthe right context, or the generator can fail to use the context it was given\nfaithfully. Evaluating the two stages separately is the only way to know which\npart of the pipeline needs improvement when answer quality is poor.",
+          "score": 0.2545211911201477
+        },
+        {
+          "chunk_id": "sample_doc_chunk_0",
+          "doc_id": "sample_doc",
+          "text": "# Sample Corpus Document\n\nReplace this file with your own documents (e.g. your NRSC/ISRO internship report,\nproject READMEs, or design case studies). One markdown or text file per document,\nor one big file — the chunker in `src/rag/index.py` will split it either way. ## About Retrieval-Augmented Generation\n\nRetrieval-Augmented Generation combines a retriever, which finds relevant text\nchunks from a knowledge base, with a language model, which generates an answer\nconditioned on those chunks.",
+          "score": 0.22077535092830658
+        },
+        {
+          "chunk_id": "sample_doc_chunk_3",
+          "doc_id": "sample_doc",
+          "text": "Most\nproduction ADAS systems fuse data from several of these sensors together to\nimprove reliability, since each sensor type has different strengths and\nblind spots.",
+          "score": 0.13937297463417053
+        }
+      ],
+      "generated_answer": "The main components of a RAG system include a retriever, which finds relevant text chunks from a knowledge base, and a language model, which generates an answer conditioned on those chunks.",
+      "retrieval": {
+        "recall_at_k": 1.0,
+        "precision_at_k": 0.3333333333333333,
+        "reciprocal_rank": 0.5
+      },
+      "generation": {
+        "faithfulness": {
+          "score": 0.0,
+          "claims": [
+            {
+              "claim": "The main components of a RAG system include a retriever, which finds relevant text chunks from a knowledge base, and a language model, which generates an answer conditioned on those chunks.",
+              "entailed": false,
+              "entailment_score": 0.003
+            }
+          ]
+        },
+        "answer_relevancy": 0.718,
+        "answer_correctness": 0.6820374727249146
+      },
+      "latency_seconds": 0.5954489999999169
+    },
+    {
+      "id": "q003",
+      "question": "What sensors are commonly used in ADAS to detect nearby objects?",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "sample_doc_chunk_2",
+          "doc_id": "sample_doc",
+          "text": "# ADAS Sensors\n\nAdvanced Driver Assistance Systems (ADAS) rely on a combination of sensors to\nperceive the vehicle's surroundings. Radar sensors detect the distance and\nspeed of nearby objects and work reliably in poor weather. LiDAR uses laser\npulses to build a precise 3D map of the environment. Ultrasonic sensors are\nused for short-range detection, such as parking assistance. Cameras provide\nvisual recognition of lane markings, traffic signs, and pedestrians.",
+          "score": 0.7069951891899109
+        },
+        {
+          "chunk_id": "sample_doc_chunk_3",
+          "doc_id": "sample_doc",
+          "text": "Most\nproduction ADAS systems fuse data from several of these sensors together to\nimprove reliability, since each sensor type has different strengths and\nblind spots.",
+          "score": 0.6050460338592529
+        },
+        {
+          "chunk_id": "sample_doc_chunk_0",
+          "doc_id": "sample_doc",
+          "text": "# Sample Corpus Document\n\nReplace this file with your own documents (e.g. your NRSC/ISRO internship report,\nproject READMEs, or design case studies). One markdown or text file per document,\nor one big file — the chunker in `src/rag/index.py` will split it either way. ## About Retrieval-Augmented Generation\n\nRetrieval-Augmented Generation combines a retriever, which finds relevant text\nchunks from a knowledge base, with a language model, which generates an answer\nconditioned on those chunks.",
+          "score": 0.003714117221534252
+        }
+      ],
+      "generated_answer": "Radar sensors detect the distance and speed of nearby objects and work reliably in poor weather.",
+      "retrieval": {
+        "recall_at_k": 1.0,
+        "precision_at_k": 0.3333333333333333,
+        "reciprocal_rank": 1.0
+      },
+      "generation": {
+        "faithfulness": {
+          "score": 0.0,
+          "claims": [
+            {
+              "claim": "Radar sensors detect the distance and speed of nearby objects and work reliably in poor weather.",
+              "entailed": false,
+              "entailment_score": 0.0
+            }
+          ]
+        },
+        "answer_relevancy": 0.58,
+        "answer_correctness": 0.5663459897041321
+      },
+      "latency_seconds": 0.9300063000000591
+    },
+    {
+      "id": "q004",
+      "question": "What does radar help detect in an ADAS environment?",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "sample_doc_chunk_2",
+          "doc_id": "sample_doc",
+          "text": "# ADAS Sensors\n\nAdvanced Driver Assistance Systems (ADAS) rely on a combination of sensors to\nperceive the vehicle's surroundings. Radar sensors detect the distance and\nspeed of nearby objects and work reliably in poor weather. LiDAR uses laser\npulses to build a precise 3D map of the environment. Ultrasonic sensors are\nused for short-range detection, such as parking assistance. Cameras provide\nvisual recognition of lane markings, traffic signs, and pedestrians.",
+          "score": 0.7369976043701172
+        },
+        {
+          "chunk_id": "sample_doc_chunk_3",
+          "doc_id": "sample_doc",
+          "text": "Most\nproduction ADAS systems fuse data from several of these sensors together to\nimprove reliability, since each sensor type has different strengths and\nblind spots.",
+          "score": 0.5351055860519409
+        },
+        {
+          "chunk_id": "sample_doc_chunk_1",
+          "doc_id": "sample_doc",
+          "text": "This grounds the model's output in real source\nmaterial rather than relying purely on parametric memory, which reduces\nhallucination and allows the system to answer questions about content the\nunderlying model was never trained on. ## Why Evaluation Matters\n\nA RAG system can fail in two independent places: the retriever can fail to find\nthe right context, or the generator can fail to use the context it was given\nfaithfully. Evaluating the two stages separately is the only way to know which\npart of the pipeline needs improvement when answer quality is poor.",
+          "score": 0.07047858089208603
+        }
+      ],
+      "generated_answer": "Radar helps detect the distance and speed of nearby objects in an ADAS environment.",
+      "retrieval": {
+        "recall_at_k": 1.0,
+        "precision_at_k": 0.3333333333333333,
+        "reciprocal_rank": 1.0
+      },
+      "generation": {
+        "faithfulness": {
+          "score": 0.0,
+          "claims": [
+            {
+              "claim": "Radar helps detect the distance and speed of nearby objects in an ADAS environment.",
+              "entailed": false,
+              "entailment_score": 0.003
+            }
+          ]
+        },
+        "answer_relevancy": 0.87,
+        "answer_correctness": 0.7593012452125549
+      },
+      "latency_seconds": 0.6461848999999802
+    },
+    {
+      "id": "q005",
+      "question": "What is the purpose of ultrasonic sensors in vehicles?",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "sample_doc_chunk_2",
+          "doc_id": "sample_doc",
+          "text": "# ADAS Sensors\n\nAdvanced Driver Assistance Systems (ADAS) rely on a combination of sensors to\nperceive the vehicle's surroundings. Radar sensors detect the distance and\nspeed of nearby objects and work reliably in poor weather. LiDAR uses laser\npulses to build a precise 3D map of the environment. Ultrasonic sensors are\nused for short-range detection, such as parking assistance. Cameras provide\nvisual recognition of lane markings, traffic signs, and pedestrians.",
+          "score": 0.5849825143814087
+        },
+        {
+          "chunk_id": "sample_doc_chunk_3",
+          "doc_id": "sample_doc",
+          "text": "Most\nproduction ADAS systems fuse data from several of these sensors together to\nimprove reliability, since each sensor type has different strengths and\nblind spots.",
+          "score": 0.35781052708625793
+        },
+        {
+          "chunk_id": "sample_doc_chunk_1",
+          "doc_id": "sample_doc",
+          "text": "This grounds the model's output in real source\nmaterial rather than relying purely on parametric memory, which reduces\nhallucination and allows the system to answer questions about content the\nunderlying model was never trained on. ## Why Evaluation Matters\n\nA RAG system can fail in two independent places: the retriever can fail to find\nthe right context, or the generator can fail to use the context it was given\nfaithfully. Evaluating the two stages separately is the only way to know which\npart of the pipeline needs improvement when answer quality is poor.",
+          "score": 0.035106584429740906
+        }
+      ],
+      "generated_answer": "Ultrasonic sensors are used for short-range detection, such as parking assistance.",
+      "retrieval": {
+        "recall_at_k": 1.0,
+        "precision_at_k": 0.3333333333333333,
+        "reciprocal_rank": 1.0
+      },
+      "generation": {
+        "faithfulness": {
+          "score": 0.0,
+          "claims": [
+            {
+              "claim": "Ultrasonic sensors are used for short-range detection, such as parking assistance.",
+              "entailed": false,
+              "entailment_score": 0.001
+            }
+          ]
+        },
+        "answer_relevancy": 0.779,
+        "answer_correctness": 1.000000238418579
+      },
+      "latency_seconds": 0.34171649999984766
+    }
+  ]
+}
