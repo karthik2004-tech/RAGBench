@@ -1,5 +1,14 @@
 from typing import Any, Dict, List
+from src.ragbench.evaluation.diagnostics import (diagnose_result,)
 import time
+
+from src.ragbench.evaluation.optimization_engine import (
+    optimize_result,
+)
+
+from src.ragbench.evaluation.recommendations import (
+    generate_recommendations,
+)
 from src.ragbench.evaluation.passage_matching import (
     find_relevant_chunks,
     reference_recall_at_k,
@@ -121,28 +130,32 @@ class RAGEvaluator:
         # Final result
         # ----------------------------------------------------
 
-        return {
+        evaluation_result = {
             "id": sample.id,
             "question": sample.question,
-
             "retrieved_chunks": retrieved_chunks,
-
             "generated_answer": generated_answer,
-
             "retrieval": {
                 "recall_at_k": recall,
                 "precision_at_k": precision,
                 "reciprocal_rank": rr,
             },
-
             "generation": {
                 "faithfulness": faithfulness_result,
                 "answer_relevancy": relevancy,
                 "answer_correctness": correctness,
             },
-
             "latency_seconds": latency,
         }
+
+        evaluation_result["diagnostics"] = diagnose_result(
+            evaluation_result
+        )
+        evaluation_result["recommendations"] = (
+            generate_recommendations(evaluation_result)
+        )
+
+        return evaluation_result
 
     def evaluate(
         self,
