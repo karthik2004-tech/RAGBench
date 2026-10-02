@@ -111,8 +111,26 @@ def main():
 
         print(
             f"  Faithfulness: "
-            f"{result['generation']['faithfulness']}"
+            f"{result['generation']['faithfulness']['score']:.3f}"
         )
+
+        for index, claim in enumerate(
+            result["generation"]["faithfulness"]["claims"],
+            start=1,
+        ):
+            print(f"    Claim {index}: {claim['claim']}")
+            print(f"      NLI: {claim['nli_score']:.3f}")
+            print(
+                "      Semantic similarity: "
+                f"{claim['semantic_similarity']:.3f}"
+            )
+            print(
+                "      Supported: "
+                f"{'YES' if claim['supported'] else 'NO'}"
+            )
+            print(f"      Reason: {claim['reason']}")
+            if claim["best_evidence"]:
+                print(f"      Evidence: {claim['best_evidence']}")
 
     # --------------------------------------------------
     # Dataset-level optimization
