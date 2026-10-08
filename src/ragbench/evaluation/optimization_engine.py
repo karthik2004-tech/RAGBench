@@ -12,11 +12,13 @@ from src.ragbench.evaluation.experiment_optimizer import (
     recommend_historical_configuration,
     recommend_next_experiment
 )
+from src.ragbench.evaluation.diagnostics import DiagnosticConfig
 
 
 def optimize_result(
     current_result: Dict[str, Any],
     experiments: List[Dict[str, Any]],
+    config: DiagnosticConfig | None = None,
 ) -> Dict[str, Any]:
     """
     Combine diagnostics, recommendations, and
@@ -24,9 +26,7 @@ def optimize_result(
     optimization report.
     """
 
-    diagnostics = diagnose_result(
-        current_result
-    )
+    diagnostics = diagnose_result(current_result, config=config)
 
     recommendations = generate_recommendations(
         current_result

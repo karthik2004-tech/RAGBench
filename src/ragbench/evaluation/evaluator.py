@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-from src.ragbench.evaluation.diagnostics import (diagnose_result,)
+from src.ragbench.evaluation.diagnostics import DiagnosticConfig, diagnose_result
 import time
 
 from src.ragbench.evaluation.optimization_engine import (
@@ -37,8 +37,13 @@ class RAGEvaluator:
     RAGSystem interface.
     """
 
-    def __init__(self, rag_system: RAGSystem):
+    def __init__(
+        self,
+        rag_system: RAGSystem,
+        diagnostic_config: DiagnosticConfig | None = None,
+    ):
         self.rag_system = rag_system
+        self.diagnostic_config = diagnostic_config
 
     def evaluate_sample(
         self,
@@ -149,7 +154,8 @@ class RAGEvaluator:
         }
 
         evaluation_result["diagnostics"] = diagnose_result(
-            evaluation_result
+            evaluation_result,
+            config=self.diagnostic_config,
         )
         evaluation_result["recommendations"] = (
             generate_recommendations(evaluation_result)

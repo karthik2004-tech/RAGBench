@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from typing import Any, Dict
 
 
@@ -27,6 +28,12 @@ class ExperimentStorage:
         """
 
         experiment_name = result["experiment"]["name"]
+        if not isinstance(experiment_name, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_.-]*", experiment_name
+        ):
+            raise ValueError(
+                "Experiment name may contain only letters, numbers, dots, underscores, and hyphens."
+            )
 
         experiment_dir = os.path.join(
             self.output_dir,
@@ -43,8 +50,9 @@ class ExperimentStorage:
             "result.json",
         )
 
+        temporary_path = result_path + ".tmp"
         with open(
-            result_path,
+            temporary_path,
             "w",
             encoding="utf-8",
         ) as f:
@@ -56,6 +64,8 @@ class ExperimentStorage:
                 ensure_ascii=False,
             )
 
+        os.replace(temporary_path, result_path)
+
         return result_path
 
     def load(
@@ -66,6 +76,12 @@ class ExperimentStorage:
         Load a previously saved experiment.
         """
 
+        if not isinstance(experiment_name, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_.-]*", experiment_name
+        ):
+            raise ValueError(
+                "Experiment name may contain only letters, numbers, dots, underscores, and hyphens."
+            )
         result_path = os.path.join(
             self.output_dir,
             experiment_name,
@@ -131,4 +147,4 @@ class ExperimentStorage:
 
 
 
-                
+

@@ -1,7 +1,15 @@
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+_model = None
+
+
+def _get_model():
+    """Load the embedding model only when correctness is first evaluated."""
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
 
 
 def answer_correctness_score(
@@ -9,7 +17,7 @@ def answer_correctness_score(
     ground_truth_answer: str,
 ) -> float:
 
-    embeddings = _model.encode(
+    embeddings = _get_model().encode(
         [generated_answer, ground_truth_answer],
         convert_to_numpy=True,
     )

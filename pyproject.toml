@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ragbench"
+version = "0.1.0"
+description = "CPU-friendly evaluation and experiment tools for retrieval-augmented generation systems"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "sentence-transformers==3.0.1",
+    "transformers==4.44.2",
+    "torch==2.4.0",
+    "scikit-learn==1.5.1",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+v1 = ["faiss-cpu==1.8.0", "ollama==0.3.3"]
+dashboard = ["streamlit==1.38.0", "pandas==2.2.2"]
+dev = ["pytest>=8.0", "build>=1.2"]
+
+[project.scripts]
+ragbench = "src.ragbench.cli:main"
+
+[tool.setuptools]
+package-dir = {
+    "ragbench" = "src/ragbench",
+    "src" = "src",
+    "src.ragbench" = "src/ragbench",
+    "src.eval" = "src/eval",
+    "src.rag" = "src/rag",
+    "eval" = "src/eval",
+    "rag" = "src/rag",
+}
+packages = [
+    "ragbench", "ragbench.core", "ragbench.datasets", "ragbench.evaluation",
+    "ragbench.benchmark", "ragbench.adapters",
+    "src", "src.ragbench", "src.ragbench.core", "src.ragbench.datasets",
+    "src.ragbench.evaluation", "src.ragbench.benchmark", "src.ragbench.adapters",
+    "src.eval", "src.rag", "eval", "rag",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
